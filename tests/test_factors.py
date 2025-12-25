@@ -57,6 +57,30 @@ def multi_ticker_prices():
         "close": [100.0, 110.0, 121.0, 200.0, 210.0, 220.5],
     }).sort("date", "ticker")
 
+@pytest.fixture
+def rsi_test_data():
+    """
+    15 days of price data with known RSI value.
+    
+    Expected RSI ≈ 75.5 (overbought)
+    """
+    return pl.DataFrame({
+        "date": pl.date_range(
+            start=pl.date(2020, 1, 1),
+            end=pl.date(2020, 1, 15),
+            interval="1d",
+            eager=True
+        ),
+        "ticker": ["AAPL"] * 15,
+        "close": [100.0, 105.0, 103.0, 108.0, 110.0, 
+                  107.0, 112.0, 115.0, 113.0, 118.0,
+                  120.0, 118.0, 122.0, 125.0, 123.0],
+    })
+
+
+
+
+
 
 # ========================== TEST RETURNS ==========================
 
@@ -237,6 +261,144 @@ def test_calculate_volatility_with_returns(simple_prices):
     assert abs(actual[3] - 0.1155) < 0.001
     assert abs(actual[4] - 0.1155) < 0.001
 
+# ========================== TEST RSI =================================
+
+def test_calculate_rsi_basic(rsi_test_data):
+    """
+    Test RSI calculation with manually computed value.
+    
+    This is THE core test - if this passes, RSI works.
+    """
+    result = factors.calculate_rsi(rsi_test_data, window=14)
+    
+    # Column exists
+    assert "rsi_14" in result.columns
+    
+    # First 14 rows null (need window + 1 for change)
+    rsi_values = result["rsi_14"].to_list()
+    assert all(v is None for v in rsi_values[:14])
+    
+    # Day 15 should have RSI ≈ 75.5 (hand-calculated)
+    assert rsi_values[14] is not None
+    assert 70 < rsi_values[14] < 80, f"Expected RSI ≈75.5, got {rsi_values[14]}"
+
+
+def test_calculate_rsi_range_bounds():
+    """
+    Test that RSI always stays between 0 and 100.
+    
+    Critical for catching mathematical errors.
+    """
+    # Create varied price movement
+    prices = [100.0]
+    for i in range(1, 30):
+        change = (-1)**i * (i % 5)  # Oscillating pattern
+        prices.append(max(50.0, prices[-1] + change))
+    
+    df = pl.DataFrame({
+        "date": pl.date_range(
+            start=pl.date(2020, 1, 1),
+            end=pl.date(2020, 1, 30),
+            interval="1d",
+            eager=True
+        ),
+        "ticker": ["AAPL"] * 30,
+        "close": prices,
+    })
+    
+    result = factors.calculate_rsi(df, window=14)
+    
+    # Filter out nulls
+    rsi_values = [v for v in result["rsi_14"].to_list() if v is not None]
+    
+    # All RSI values must be 0-100
+    assert len(rsi_values) > 0, "No RSI values calculated"
+    assert all(0 <= v <= 100 for v in rsi_values), f"RSI outside valid range: {rsi_values}"
+
+
+def test_calculate_rsi_respects_ticker_groups():
+    """
+    Test that RSI is calculated independently per ticker.
+    
+    Important for multi-ticker portfolios.
+    """
+    df = pl.DataFrame({
+        "date": pl.date_range(
+            start=pl.date(2020, 1, 1),
+            end=pl.date(2020, 1, 20),
+            interval="1d",
+            eager=True
+        ).to_list() * 2,
+        "ticker": ["AAPL"] * 20 + ["MSFT"] * 20,
+        "close": 
+            [100.0 + i * 0.5 for i in range(20)] +  # AAPL: steady rise
+            [200.0 - i * 0.5 for i in range(20)],   # MSFT: steady fall
+    })
+    
+    result = factors.calculate_rsi(df, window=14)
+    
+    # Get last non-null RSI for each ticker
+    aapl_rsi = result.filter(pl.col("ticker") == "AAPL")["rsi_14"].to_list()
+    msft_rsi = result.filter(pl.col("ticker") == "MSFT")["rsi_14"].to_list()
+    
+    aapl_last = [v for v in aapl_rsi if v is not None][-1]
+    msft_last = [v for v in msft_rsi if v is not None][-1]
+    
+    # AAPL rising → high RSI (>70 = overbought)
+    assert aapl_last > 70, f"AAPL rising should have RSI > 70, got {aapl_last}"
+    
+    # MSFT falling → low RSI (<30 = oversold)
+    assert msft_last < 30, f"MSFT falling should have RSI < 30, got {msft_last}"
+
+
+def test_calculate_rsi_all_gains():
+    """
+    Edge case: price only goes up → RSI = 100
+    
+    Tests division by zero (avg_loss = 0).
+    """
+    df = pl.DataFrame({
+        "date": pl.date_range(
+            start=pl.date(2020, 1, 1),
+            end=pl.date(2020, 1, 20),
+            interval="1d",
+            eager=True
+        ),
+        "ticker": ["AAPL"] * 20,
+        "close": [100.0 + i for i in range(20)],  # Always increasing
+    })
+    
+    result = factors.calculate_rsi(df, window=14)
+    rsi_values = result["rsi_14"].to_list()
+    
+    # Last value should be 100 (or very close)
+    assert rsi_values[-1] is not None
+    assert abs(rsi_values[-1] - 100.0) < 1.0, f"All gains should give RSI ≈100, got {rsi_values[-1]}"
+
+
+def test_calculate_rsi_insufficient_data():
+    """
+    Edge case: window size > data length → all nulls
+    
+    Ensures graceful handling, no crash.
+    """
+    df = pl.DataFrame({
+        "date": pl.date_range(
+            start=pl.date(2020, 1, 1),
+            end=pl.date(2020, 1, 10),
+            interval="1d",
+            eager=True
+        ),
+        "ticker": ["AAPL"] * 10,
+        "close": [100.0 + i for i in range(10)],
+    })
+    
+    # Window=14 but only 10 data points
+    result = factors.calculate_rsi(df, window=14)
+    
+    # All RSI values should be null
+    rsi_values = result["rsi_14"].to_list()
+    assert all(v is None for v in rsi_values), "Expected all nulls with insufficient data"
 
 # ========================== TEST EDGE CASES ==========================
 
