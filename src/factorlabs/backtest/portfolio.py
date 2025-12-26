@@ -137,5 +137,30 @@ class Portfolio:
         if shares == self.positions[ticker].shares:
             del self.positions[ticker]
         else:
-            self.positions[ticker].shares -= shares
-            
+            existing = self.positions[ticker]
+            self.positions[ticker] = Position(
+                ticker=ticker,
+                shares=existing.shares - shares,
+                entry_price=existing.entry_price,
+                entry_date=existing.entry_date)
+    
+    def get_unrealized_pnl(self,prices: dict[str,float]) -> float:
+        """
+        Calculate unrealized P&L for all open positions.
+        
+        Parameters
+        ----------
+        prices : dict[str, float]
+            Current market prices (ticker → price)
+        
+        Returns
+        -------
+        float
+            Total unrealized P&L across all positions
+        """
+        total_pnl = 0
+        for pos in self.positions.values():
+            if prices.get(pos.ticker) is not None:
+                current_price = prices.get(pos.ticker) * pos.shares
+                total_pnl += current_price - (pos.entry_price * pos.shares)
+        return total_pnl
