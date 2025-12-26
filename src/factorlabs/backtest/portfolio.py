@@ -23,6 +23,7 @@ class Portfolio:
     def __init__(self, initial_cash: float = 100000.0):
         self.cash = initial_cash
         self.positions: dict[str, Position] = {}
+        self.realized_pnl = 0.0
     
     def get_total_value(self, prices: dict[str, float] = None) -> float:
         """
@@ -133,7 +134,8 @@ class Portfolio:
             
         proceeds = shares * price 
         self.cash += proceeds
-        
+        #tracking the realized pnl
+        self.realized_pnl += proceeds - shares * self.positions[ticker].entry_price
         if shares == self.positions[ticker].shares:
             del self.positions[ticker]
         else:
@@ -164,3 +166,29 @@ class Portfolio:
                 current_price = prices.get(pos.ticker) * pos.shares
                 total_pnl += current_price - (pos.entry_price * pos.shares)
         return total_pnl
+        
+    def get_realized_pnl(self) -> float:
+        """
+        Calculate realized P&L for all open positions.
+        
+        Parameters
+        ----------
+        prices : dict[str, float]
+            Current market prices (ticker → price)
+        
+        Returns
+        -------
+        float
+            Total unrealized P&L across all positions
+        """
+        return self.realized_pnl
+    
+    def get_holdings_value(self,prices: dict[str,float]) -> dict:
+        """
+        returns dict of the value of all open positions
+        """
+        res = {}
+        for pos in self.positions.values():
+            if prices.get(pos.ticker) is not None:
+                res[pos.ticker] = pos.shares * prices.get(pos.ticker)
+        return res        
