@@ -1,5 +1,5 @@
 import polars as pl
-from factorlabs.data.src import io_utils
+from factorlabs.data import io_utils
 ## NOTE: YOU NEED TO BE IN SRC THEN DO python -m factorlabs.financialfeatures.factors
 #WILL FIND A FIX LATER 
 cfg = pl.Config()
@@ -81,8 +81,45 @@ def calculate_volitility(df:pl.DataFrame,delay=10,title='vol_10d'):
         .over("ticker")
         .alias(title)
     )
-    return df 
+    return df
 
+def calculate_rsi(df: pl.DataFrame,window: int) -> pl.DataFrame:
+    """
+    RSI formula: RSI = 100 - (100 / (1 + RS)) where RS = avg_gain / avg_loss
+    """
+    df = df.with_columns(
+    ((pl.col("close") / pl.col("close").shift(1) - 1))
+        .over("ticker")
+        .alias("price_change")
+    )
+    df = df.with_columns(
+        pl.when(pl.col("price_change").is_null())
+        .then(None)
+        .when(pl.col("price_change") > 0)
+        .then(pl.col("price_change"))
+        .otherwise(0.0)
+        .alias("gains")
+    )
+    df = df.with_columns(
+        pl.when(pl.col("price_change").is_null())
+        .then(None)
+        .when(pl.col("price_change") < 0)
+        .then(-1 * pl.col("price_change"))
+        .otherwise(0.0)
+        .alias("losses")
+    )
+    df = df.drop("price_change")
+    df = df.with_columns(
+        pl.col("gains").rolling_mean(window_size=window,min_samples=window).over("ticker").alias("avg_gains")
+    )
+    df = df.with_columns(
+        pl.col("losses").rolling_mean(window_size=window,min_samples=window).over("ticker").alias("avg_losses")
+    )
+    df = df.with_columns(
+        (100 - (100 / (1 + pl.col("avg_gains") / pl.col("avg_losses")))).over("ticker").alias(f"rsi_{window}")
+    )
+    df = df.drop(["gains","losses","avg_gains","avg_losses"])
+    return df
 if __name__ == "__main__":
     df = io_utils.load_prices_df()
 

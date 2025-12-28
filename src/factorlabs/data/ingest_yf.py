@@ -7,7 +7,7 @@ import polars as pl
 import time
 import ast
 import duckdb
-from io_utils import write_prices
+from .io_utils import write_prices
 
 
 

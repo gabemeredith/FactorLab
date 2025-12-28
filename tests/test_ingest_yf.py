@@ -1,5 +1,5 @@
 """
-Tests for factorlabs/data/src/ingest_yf.py
+Tests for factorlabs/data/ingest_yf.py
 
 Test Philosophy:
 - Test each transformation function in isolation
@@ -12,12 +12,11 @@ Run with: pytest tests/test_ingest_yf.py -v
 
 import sys
 sys.path.insert(0, 'src')
-sys.path.insert(0, 'src/factorlabs/data/src')
 
 import polars as pl
 import pytest
 from datetime import date
-from factorlabs.data.src import ingest_yf
+from factorlabs.data import ingest_yf
 
 
 # ========================== FIXTURES ==========================
