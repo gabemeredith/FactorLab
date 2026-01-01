@@ -9,6 +9,7 @@ import ast
 import duckdb
 from .io_utils import write_prices
 # From the project root:
+# EXAMPLE RUN 
 # python -m factorlabs.data.ingest_yf NVDA 2020-01-01 2020-02-01
 
 

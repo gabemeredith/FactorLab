@@ -68,8 +68,8 @@ def test_rebalance_from_cash_to_single_stock(empty_portfolio):
     - 100% AAPL @ $100/share
 
     Calculate:
-    - Target AAPL value = ??? (what's 100% of $10,000?)
-    - Target AAPL shares = ??? (how many shares at $100?)
+    - Target AAPL value = 10,000 (what's 100% of $10,000?)
+    - Target AAPL shares = 100 (how many shares at $100?)
 
     Expected:
     - 1 trade (buy)
@@ -87,15 +87,15 @@ def test_rebalance_from_cash_to_single_stock(empty_portfolio):
     )
 
     # Should have exactly 1 trade
-    assert len(trades) == ???  # How many trades expected?
+    assert len(trades) == 1  # How many trades expected?
 
     # Should be a buy
     trade = trades[0]
-    assert trade.ticker == ???  # Which ticker?
-    assert trade.side == ???  # "buy" or "sell"?
-    assert trade.shares == ???  # How many shares? ($10,000 / $100)
-    assert trade.price == ???  # What price?
-    assert trade.date == ???  # What date?
+    assert trade.ticker == "AAPL"  # Which ticker?
+    assert trade.side == "buy"  # "buy" or "sell"?
+    assert trade.shares == 100  # How many shares? ($10,000 / $100)
+    assert trade.price == 100  # What price?
+    assert trade.date == date(2020, 1, 2)  # What date?
 
 
 def test_rebalance_sell_entire_position(portfolio_with_aapl):
@@ -112,9 +112,9 @@ def test_rebalance_sell_entire_position(portfolio_with_aapl):
     - 100% cash
 
     Calculate:
-    - Target AAPL value = ??? (what's 0% of $10,000?)
-    - Current AAPL shares = ??? (how many do we own?)
-    - Shares to sell = ??? (how many to reach 0?)
+    - Target AAPL value = 0 (what's 0% of $10,000?)
+    - Current AAPL shares = 50 (how many do we own?)
+    - Shares to sell = 50 (how many to reach 0?)
 
     Expected:
     - 1 trade (sell all 50 shares)
@@ -131,13 +131,13 @@ def test_rebalance_sell_entire_position(portfolio_with_aapl):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???  # How many trades?
+    assert len(trades) == 1  # How many trades?
 
     trade = trades[0]
-    assert trade.ticker == ???
-    assert trade.side == ???  # "buy" or "sell"?
-    assert trade.shares == ???  # How many shares to sell?
-    assert trade.price == ???
+    assert trade.ticker == "AAPL"
+    assert trade.side == "sell"  # "buy" or "sell"?
+    assert trade.shares == 50  # How many shares to sell?
+    assert trade.price == 100
 
 
 def test_rebalance_reduce_position(portfolio_with_aapl):
@@ -153,10 +153,10 @@ def test_rebalance_reduce_position(portfolio_with_aapl):
     - 25% AAPL
 
     Calculate:
-    - Target AAPL value = ??? (what's 25% of $10,000?)
-    - Target AAPL shares = ??? (how many shares at $100?)
+    - Target AAPL value = 2,500 (what's 25% of $10,000?)
+    - Target AAPL shares = 25 (how many shares at $100?)
     - Current AAPL shares = 50
-    - Shares to sell = ??? (50 - target shares)
+    - Shares to sell = 50 - 25 = 25 (50 - target shares)
 
     Expected:
     - Sell 25 shares (keeping 25)
@@ -173,13 +173,12 @@ def test_rebalance_reduce_position(portfolio_with_aapl):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???
+    assert len(trades) == 1
 
     trade = trades[0]
-    assert trade.ticker == ???
-    assert trade.side == ???
-    assert trade.shares == ???  # How many to sell? (hint: 50 current - 25 target = ?)
-
+    assert trade.ticker == "AAPL"
+    assert trade.side == "sell"
+    assert trade.shares == 25  
 
 def test_rebalance_increase_position(portfolio_with_aapl):
     """
@@ -194,10 +193,10 @@ def test_rebalance_increase_position(portfolio_with_aapl):
     - 75% AAPL
 
     Calculate:
-    - Target AAPL value = ??? (what's 75% of $10,000?)
-    - Target AAPL shares = ??? (how many shares at $100?)
+    - Target AAPL value = 7,500 (what's 75% of $10,000?)
+    - Target AAPL shares = 75 (how many shares at $100?)
     - Current AAPL shares = 50
-    - Shares to buy = ??? (target - current)
+    - Shares to buy = 25 (target - current)
 
     Expected:
     - Buy 25 more shares (to reach 75)
@@ -214,12 +213,12 @@ def test_rebalance_increase_position(portfolio_with_aapl):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???
+    assert len(trades) == 1
 
     trade = trades[0]
-    assert trade.ticker == ???
-    assert trade.side == ???  # "buy" or "sell"?
-    assert trade.shares == ???  # How many to buy?
+    assert trade.ticker == "AAPL"
+    assert trade.side == "buy"  # "buy" or "sell"?
+    assert trade.shares == 25  # How many to buy?
 
 
 # ========================== MULTI-STOCK TESTS ==========================
@@ -237,10 +236,10 @@ def test_rebalance_multiple_stocks_from_cash(empty_portfolio):
     - 40% MSFT @ $50/share
 
     Calculate:
-    - Target AAPL value = ??? (60% of $10,000)
-    - Target AAPL shares = ??? (value / price)
-    - Target MSFT value = ??? (40% of $10,000)
-    - Target MSFT shares = ??? (value / price)
+    - Target AAPL value = 6,000 (60% of $10,000)
+    - Target AAPL shares = 60 (value / price)
+    - Target MSFT value = 4,000 (40% of $10,000)
+    - Target MSFT shares = 4,000 / 50 = 80 (value / price)
 
     Expected:
     - 2 trades (buy AAPL, buy MSFT)
@@ -263,17 +262,17 @@ def test_rebalance_multiple_stocks_from_cash(empty_portfolio):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???  # How many trades?
+    assert len(trades) == 2 # How many trades?
 
     # Find AAPL trade
     aapl_trade = [t for t in trades if t.ticker == "AAPL"][0]
-    assert aapl_trade.side == ???
-    assert aapl_trade.shares == ???  # $6,000 / $100 = ?
+    assert aapl_trade.side == "buy"
+    assert aapl_trade.shares == 60  # $6,000 / $100 = ?
 
     # Find MSFT trade
     msft_trade = [t for t in trades if t.ticker == "MSFT"][0]
-    assert msft_trade.side == ???
-    assert msft_trade.shares == ???  # $4,000 / $50 = ?
+    assert msft_trade.side == "buy"
+    assert msft_trade.shares == 80  # $4,000 / $50 = ?
 
 
 def test_rebalance_swap_positions(portfolio_with_aapl):
@@ -290,9 +289,9 @@ def test_rebalance_swap_positions(portfolio_with_aapl):
     - 100% MSFT @ $50/share
 
     Calculate:
-    - Sell AAPL: ??? shares (all of them)
-    - After sell, cash = ??? ($5,000 + $5,000 from sale)
-    - Buy MSFT: ??? shares ($10,000 / $50)
+    - Sell AAPL: 50 shares (all of them)
+    - After sell, cash = 10,000 ($5,000 + $5,000 from sale)
+    - Buy MSFT: 200 shares ($10,000 / $50)
 
     Expected:
     - 2 trades: sell AAPL, then buy MSFT
@@ -313,17 +312,17 @@ def test_rebalance_swap_positions(portfolio_with_aapl):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???  # How many trades?
+    assert len(trades) == 2  # How many trades?
 
     # First trade should be SELL (to free up cash)
-    assert trades[0].side == ???  # Which comes first: "buy" or "sell"?
-    assert trades[0].ticker == ???  # Which ticker to sell?
-    assert trades[0].shares == ???
+    assert trades[0].side == "sell"  # Which comes first: "buy" or "sell"?
+    assert trades[0].ticker == "AAPL" # Which ticker to sell?
+    assert trades[0].shares == 50
 
     # Second trade should be BUY
-    assert trades[1].side == ???
-    assert trades[1].ticker == ???
-    assert trades[1].shares == ???  # $10,000 / $50 = ?
+    assert trades[1].side == "buy"
+    assert trades[1].ticker == "MSFT"
+    assert trades[1].shares == 200  # $10,000 / $50 = ?
 
 
 def test_rebalance_complex_multi_stock(portfolio_with_two_stocks):
@@ -342,18 +341,18 @@ def test_rebalance_complex_multi_stock(portfolio_with_two_stocks):
     - 20% cash (currently 45%)
 
     Calculate:
-    - Target AAPL: ??? shares (50% of $10,000 = $5,000 / $100)
+    - Target AAPL: 50 shares (50% of $10,000 = $5,000 / $100)
     - Current AAPL: 30 shares
-    - AAPL trade: ??? (buy or sell how many?)
+    - AAPL trade: BUY 20 shares
 
-    - Target MSFT: ??? shares (30% of $10,000 = $3,000 / $50)
+    - Target MSFT: 60 shares (30% of $10,000 = $3,000 / $50)
     - Current MSFT: 50 shares
-    - MSFT trade: ??? (buy or sell how many?)
+    - MSFT trade: BUY 10 shares
 
     Expected:
-    - Sell some MSFT
-    - Buy some AAPL
-    - Order matters! (sells first)
+    - Buy 10 MSFT (to go from 25% to 30%)
+    - Buy 20 AAPL (to go from 30% to 50%)
+    - Both are buys (using the excess cash)
     """
     rebalancer = Rebalancer()
 
@@ -374,17 +373,17 @@ def test_rebalance_complex_multi_stock(portfolio_with_two_stocks):
     )
 
     # Should have 2 trades
-    assert len(trades) == ???
+    assert len(trades) == 2
 
-    # Find MSFT trade (should be first because it's a sell)
+    # Find MSFT trade
     msft_trade = [t for t in trades if t.ticker == "MSFT"][0]
-    assert msft_trade.side == ???  # buy or sell?
-    assert msft_trade.shares == ???  # Current 50, target 60, so trade = ?
+    assert msft_trade.side == "buy"  # buy or sell?
+    assert msft_trade.shares == 10  # Current 50, target 60, so trade = buy 10
 
     # Find AAPL trade
     aapl_trade = [t for t in trades if t.ticker == "AAPL"][0]
-    assert aapl_trade.side == ???  # buy or sell?
-    assert aapl_trade.shares == ???  # Current 30, target 50, so trade = ?
+    assert aapl_trade.side == "buy"  # buy or sell?
+    assert aapl_trade.shares == 20  # Current 30, target 50, so trade = buy 20
 
 
 # ========================== EDGE CASES ==========================
@@ -415,7 +414,7 @@ def test_rebalance_no_changes_needed(portfolio_with_aapl):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???  # Should be 0 (no trades needed)
+    assert len(trades) == 0  # Should be 0 (no trades needed)
 
 
 def test_rebalance_with_price_change(portfolio_with_aapl):
@@ -432,10 +431,10 @@ def test_rebalance_with_price_change(portfolio_with_aapl):
     - 50% AAPL
 
     Calculate:
-    - Target AAPL value = ??? (50% of $15,000)
-    - Target AAPL shares = ??? ($7,500 / $200)
+    - Target AAPL value = $7,500 (50% of $15,000)
+    - Target AAPL shares = 37.5 ($7,500 / $200)
     - Current shares = 50
-    - Trade = ??? (sell how many?)
+    - Trade = sell 12.5 shares (50 - 37.5)
 
     Expected:
     - Sell some AAPL (it's grown beyond 50%)
@@ -452,12 +451,12 @@ def test_rebalance_with_price_change(portfolio_with_aapl):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???
+    assert len(trades) == 1
 
     trade = trades[0]
-    assert trade.side == ???  # buy or sell?
-    assert trade.shares == ???  # Current 50, target ?, trade = ?
-    assert trade.price == ???  # Use current price, not entry price!
+    assert trade.side == "sell"  # buy or sell?
+    assert trade.shares == 12.5  # Current 50, target 37.5, trade = sell 12.5
+    assert trade.price == 200.0  # Use current price, not entry price!
 
 
 def test_rebalance_empty_target_weights(portfolio_with_two_stocks):
@@ -488,14 +487,14 @@ def test_rebalance_empty_target_weights(portfolio_with_two_stocks):
         trade_date=date(2020, 1, 2)
     )
 
-    assert len(trades) == ???  # How many positions to close?
+    assert len(trades) == 2  # How many positions to close?
 
     # Both should be sells
-    assert all(t.side == ??? for t in trades)
+    assert all(t.side == "sell" for t in trades)
 
     # Find each ticker
     aapl_trade = [t for t in trades if t.ticker == "AAPL"][0]
-    assert aapl_trade.shares == ???  # Sell all 30 shares
+    assert aapl_trade.shares == 30  # Sell all 30 shares
 
     msft_trade = [t for t in trades if t.ticker == "MSFT"][0]
-    assert msft_trade.shares == ???  # Sell all 50 shares
+    assert msft_trade.shares == 50  # Sell all 50 shares

@@ -91,4 +91,30 @@ class Rebalancer:
         # 5. Separate into sells and buys
         # 6. Return sells + buys (sells first!)
 
-        raise NotImplementedError("You need to implement this!")
+        total_value = current_portfolio.get_total_value(prices)
+        trade_buys = []
+        trade_sells = []
+        for ticker,weight in target_weights.items():
+            target_value = weight * total_value
+            target_shares = target_value / prices[ticker]
+            current_shares = current_portfolio.positions.get(ticker)
+            if current_shares is not None:
+                current_shares = current_shares.shares
+            else:
+                current_shares = 0
+            delta = target_shares - current_shares
+            if delta > 0: #buy
+                trade = Trade(ticker=ticker,shares=delta,price=prices[ticker],
+                              side="buy",date=trade_date)
+                trade_buys.append(trade)
+            elif delta < 0: #sell
+                trade = Trade(ticker=ticker,shares=abs(delta),price=prices[ticker],
+                              side="sell",date=trade_date)
+                trade_sells.append(trade)
+        for ticker in current_portfolio.positions.keys():
+            if ticker not in target_weights:
+                shares_to_sell = current_portfolio.positions[ticker].shares
+                trade = Trade(ticker=ticker,shares=shares_to_sell,price=prices[ticker],
+                              side="sell",date=trade_date)
+                trade_sells.append(trade)
+        return trade_sells + trade_buys
