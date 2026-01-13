@@ -96,11 +96,9 @@ def test_backtester_buy_and_hold_single_stock(simple_prices):
     backtester = Backtester()
 
     # Static target: 100% AAPL, never changes
-    target_weights = {"AAPL": 1.0}
-
     result = backtester.run(
         prices=simple_prices,
-        target_weights=target_weights,
+        strategy={"AAPL": 1.0},
         config=config
     )
 
@@ -179,11 +177,9 @@ def test_backtester_daily_rebalance_single_stock(simple_prices):
     backtester = Backtester()
 
     # Target: 50% AAPL, 50% cash (rebalance every day)
-    target_weights = {"AAPL": 0.5}
-
     result = backtester.run(
         prices=simple_prices,
-        target_weights=target_weights,
+        strategy={"AAPL": 0.5},
         config=config
     )
 
@@ -250,14 +246,9 @@ def test_backtester_two_stocks_60_40(two_stock_prices):
 
     backtester = Backtester()
 
-    target_weights = {
-        "AAPL": 0.6,
-        "MSFT": 0.4
-    }
-
     result = backtester.run(
         prices=two_stock_prices,
-        target_weights=target_weights,
+        strategy={"AAPL": 0.6, "MSFT": 0.4},
         config=config
     )
 
@@ -305,7 +296,7 @@ def test_backtester_equity_curve_structure(simple_prices):
     backtester = Backtester()
     result = backtester.run(
         prices=simple_prices,
-        target_weights={"AAPL": 1.0},
+        strategy={"AAPL": 1.0},
         config=config
     )
 
@@ -343,7 +334,7 @@ def test_backtester_trades_structure(simple_prices):
     backtester = Backtester()
     result = backtester.run(
         prices=simple_prices,
-        target_weights={"AAPL": 0.5},
+        strategy={"AAPL": 0.5},
         config=config
     )
 
@@ -379,11 +370,9 @@ def test_backtester_no_trades_when_at_target(simple_prices):
     backtester = Backtester()
 
     # Target: 100% cash (empty dict)
-    target_weights = {}
-
     result = backtester.run(
         prices=simple_prices,
-        target_weights=target_weights,
+        strategy={},
         config=config
     )
 
@@ -413,7 +402,7 @@ def test_backtester_single_day(simple_prices):
     backtester = Backtester()
     result = backtester.run(
         prices=simple_prices,
-        target_weights={"AAPL": 1.0},
+        strategy={"AAPL": 1.0},
         config=config
     )
 

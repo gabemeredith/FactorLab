@@ -19,6 +19,7 @@ import polars as pl
 
 from .portfolio import Portfolio
 from .rebalancer import Rebalancer
+from .strategy import Strategy, StaticWeightStrategy
 
 
 @dataclass
@@ -61,79 +62,35 @@ class Backtester:
     def run(
         self,
         prices: pl.DataFrame,
-        target_weights: dict[str, float],
-        config: BacktestConfig
+        strategy: Strategy | dict[str, float],
+        config: BacktestConfig,
+        factors: pl.DataFrame | None = None,
     ) -> BacktestResult:
         """
         Run a backtest simulation.
-
-        Algorithm:
-        1. Initialize Portfolio with config.initial_cash
-        2. Initialize Rebalancer
-        3. Get list of dates from config.start_date to config.end_date
-        4. For each date:
-           a. Get prices for that date (from prices DataFrame)
-           b. Check if should rebalance (based on rebalance_frequency)
-           c. If rebalancing:
-              - Calculate trades using rebalancer.calculate_trades()
-              - Execute each trade using portfolio.buy() or portfolio.sell()
-              - Record the trades
-           d. Record portfolio state (cash, positions, total value)
-        5. Build equity_curve DataFrame
-        6. Build trades DataFrame
-        7. Return BacktestResult
 
         Parameters
         ----------
         prices : pl.DataFrame
             Historical prices with columns: date, ticker, close
-            Should contain all dates and tickers needed for the backtest
-        target_weights : dict[str, float]
-            Target allocation (ticker → weight)
-            For now, this is static (same weights every rebalance)
-            Later: will be replaced by Strategy object
+        strategy : Strategy | dict[str, float]
+            Either a Strategy object or a dict of static weights.
+            If dict, will be wrapped in StaticWeightStrategy.
         config : BacktestConfig
             Backtest parameters (dates, cash, frequency, etc.)
+        factors : pl.DataFrame, optional
+            Pre-computed factors for dynamic strategies.
+            Columns: [date, ticker, close, mom_10d, rsi_14, ...]
 
         Returns
         -------
         BacktestResult
             Contains equity_curve, trades, and other results
-
-        Examples
-        --------
-        >>> prices = pl.DataFrame({
-        ...     "date": [date(2020, 1, 1), date(2020, 1, 2)],
-        ...     "ticker": ["AAPL", "AAPL"],
-        ...     "close": [100.0, 110.0]
-        ... })
-        >>> config = BacktestConfig(
-        ...     start_date=date(2020, 1, 1),
-        ...     end_date=date(2020, 1, 2),
-        ...     initial_cash=10000.0
-        ... )
-        >>> backtester = Backtester()
-        >>> result = backtester.run(
-        ...     prices=prices,
-        ...     target_weights={"AAPL": 1.0},
-        ...     config=config
-        ... )
-        >>> len(result.equity_curve)  # Should have 2 rows
-        2
         """
-        # TODO: Implement this!
-        # Hints:
-        # 1. Initialize Portfolio and Rebalancer
-        # 2. Get list of unique dates from prices DataFrame
-        # 3. Filter dates to config.start_date and config.end_date
-        # 4. Loop through each date:
-        #    - Get prices for that date (use prices.filter())
-        #    - Convert to dict for rebalancer: {ticker: close}
-        #    - Decide if should rebalance (check frequency)
-        #    - If rebalancing: calculate_trades() and execute them
-        #    - Record portfolio state
-        # 5. Build equity_curve and trades DataFrames from recorded data
-        # 6. Return BacktestResult
+        # Wrap dict in StaticWeightStrategy for backward compatibility
+        if isinstance(strategy, dict):
+            strategy = StaticWeightStrategy(strategy)
+
         current_portfolio = Portfolio(initial_cash=config.initial_cash)
         current_rebalancer = Rebalancer()
         
@@ -149,6 +106,12 @@ class Backtester:
             }
             rebalancing = self._should_rebalance(date,last_rebalance_date,config.rebalance_frequency)
             if rebalancing:
+                target_weights = strategy.get_target_weights(
+                    current_date=date,
+                    portfolio=current_portfolio,
+                    prices=prices_dict,
+                    factors=factors,
+                )
                 rebalancing_trades = current_rebalancer.calculate_trades(current_portfolio=current_portfolio,
                                             target_weights=target_weights,
                                             prices=prices_dict,trade_date=date)

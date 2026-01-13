@@ -153,7 +153,7 @@ def demo_full_pipeline():
     backtester = Backtester()
     result = backtester.run(
         prices=filtered_prices.select(["date", "ticker", "close"]),
-        target_weights=target_weights,
+        strategy=target_weights,
         config=backtest_config
     )
 
