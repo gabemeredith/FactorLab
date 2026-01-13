@@ -28,31 +28,31 @@ I wanted to understand:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        DATA LAYER                               │
-│  ingest_yf.py → Yahoo Finance API → Normalized Parquet         │
+│  ingest_yf.py → Yahoo Finance API → Normalized Parquet          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      FACTOR ENGINE                              │
-│  factors.py → Returns, Momentum, RSI, SMA, Volatility          │
-│  All calculations use .over("ticker") for multi-stock support  │
+│  factors.py → Returns, Momentum, RSI, SMA, Volatility           │
+│  All calculations use .over("ticker") for multi-stock support   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     STRATEGY LAYER                              │
-│  strategy.py → StaticWeightStrategy | MomentumStrategy         │
-│  Abstract interface: get_target_weights(date, prices, factors) │
+│  strategy.py → StaticWeightStrategy | MomentumStrategy          │
+│  Abstract interface: get_target_weights(date, prices, factors)  │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    EXECUTION ENGINE                             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐        │
-│  │  Portfolio  │───▶│  Rebalancer │───▶│  Backtester │        │
-│  │ tracks cash │    │ weights →   │    │ time loop   │        │
-│  │ & positions │    │ trades      │    │ simulation  │        │
-│  └─────────────┘    └─────────────┘    └─────────────┘        │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+│  │  Portfolio  │───▶│  Rebalancer │───▶│  Backtester │          │
+│  │ tracks cash │    │ weights →   │    │ time loop   │          │
+│  │ & positions │    │ trades      │    │ simulation  │          │
+│  └─────────────┘    └─────────────┘    └─────────────┘          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
