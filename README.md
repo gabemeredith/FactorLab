@@ -58,7 +58,7 @@ I wanted to understand:
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                       OUTPUTS                                   │
-│  Equity Curve │ Trade History │ Performance Metrics            │
+│  Equity Curve │ Trade History │ Performance Metrics             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
