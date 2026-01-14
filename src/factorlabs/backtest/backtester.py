@@ -29,7 +29,9 @@ class BacktestConfig:
     end_date: date
     initial_cash: float
     rebalance_frequency: Literal["daily", "weekly", "monthly", "never"] = "daily"
-    transaction_cost: float = 0.0  # basis points (e.g., 10 = 0.1%)
+    slippage_pct: float = 0.0 #e.g 0.001 = 0.1 %
+    commission_pct: float = 0.0 #e.g 0.001 = 0.1 %
+    
 
 
 @dataclass
@@ -116,17 +118,25 @@ class Backtester:
                                             target_weights=target_weights,
                                             prices=prices_dict,trade_date=date)
                 for trade in rebalancing_trades:
+                    if trade.side == "buy":
+                        effective_price = trade.price * (1 + config.slippage_pct)
+                    else:
+                        effective_price = trade.price * (1 - config.slippage_pct)
                     if trade.side == "sell":
                         current_portfolio.sell(trade.ticker,trade.shares,
-                                               trade.price,trade.date)
+                                               effective_price,trade.date)
                     elif trade.side == "buy":
+                        
                         current_portfolio.buy(trade.ticker,trade.shares,
-                                               trade.price,trade.date)
+                                               effective_price,trade.date)
+                    trade_value = trade.shares * effective_price
+                    commission = trade_value * config.commission_pct
+                    current_portfolio.cash -= commission
                     trade_records.append({
                         "date": trade.date,
                         "ticker": trade.ticker,
                         "shares": trade.shares,
-                        "price": trade.price,
+                        "price": effective_price,
                         "side": trade.side
                     })
                 last_rebalance_date = date
