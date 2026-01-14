@@ -22,6 +22,14 @@ from src.factorlabs.financialfeatures.factors import (
     calculate_sma,
 )
 from src.factorlabs.backtest.backtester import Backtester, BacktestConfig
+from src.factorlabs.analytics.metrics import (
+    total_return,
+    cagr,
+    max_drawdown,
+    annualized_volatility,
+    sharpe_ratio,
+    sortino_ratio,
+)
 
 
 def print_section(title):
@@ -162,41 +170,37 @@ def demo_full_pipeline():
     print(f"   - Executed {len(result.trades)} trades")
 
     # =================================================================
-    # STEP 5: Analyze Results
+    # STEP 5: Analyze Results (using analytics module)
     # =================================================================
     print_section("STEP 5: Performance Analysis")
-
-    # Calculate key metrics
-    initial_value = result.equity_curve["portfolio_value"][0]
-    final_value = result.equity_curve["portfolio_value"][-1]
-    total_return = (final_value / initial_value - 1) * 100
 
     # Filter equity curve to valid trading days (where we have positions)
     valid_equity = result.equity_curve.filter(pl.col("positions_value") > 0)
 
-    if len(valid_equity) > 1:
-        # Daily returns for volatility
-        equity_returns = (
-            valid_equity["portfolio_value"]
-            .pct_change()
-            .drop_nulls()
-        )
-        volatility = equity_returns.std() * (252 ** 0.5) * 100  # Annualized
+    # Calculate metrics using analytics module
+    initial_value = valid_equity["portfolio_value"][0]
+    final_value = valid_equity["portfolio_value"][-1]
 
-        # Max drawdown
-        cummax = valid_equity["portfolio_value"].cum_max()
-        drawdown = (valid_equity["portfolio_value"] / cummax - 1) * 100
-        max_drawdown = drawdown.min()
-    else:
-        volatility = 0.0
-        max_drawdown = 0.0
+    total_ret = total_return(valid_equity)
+    cagr_val = cagr(valid_equity)
+    max_dd = max_drawdown(valid_equity)
+
+    # Daily returns for risk metrics
+    daily_returns = valid_equity["portfolio_value"].pct_change().drop_nulls()
+
+    vol = annualized_volatility(daily_returns)
+    sharpe = sharpe_ratio(daily_returns, risk_free_rate=0.05)
+    sortino = sortino_ratio(daily_returns, risk_free_rate=0.05)
 
     print(" Performance Summary:")
     print(f"   Initial Value:    ${initial_value:>12,.2f}")
     print(f"   Final Value:      ${final_value:>12,.2f}")
-    print(f"   Total Return:     {total_return:>12.2f}%")
-    print(f"   Volatility (ann): {volatility:>12.2f}%")
-    print(f"   Max Drawdown:     {max_drawdown:>12.2f}%")
+    print(f"   Total Return:     {total_ret * 100:>12.2f}%")
+    print(f"   CAGR:             {cagr_val * 100:>12.2f}%")
+    print(f"   Volatility (ann): {vol * 100:>12.2f}%")
+    print(f"   Max Drawdown:     {max_dd * 100:>12.2f}%")
+    print(f"   Sharpe Ratio:     {sharpe:>12.2f}")
+    print(f"   Sortino Ratio:    {sortino:>12.2f}")
 
     # Trade statistics
     print(f"\n Trade Statistics:")
@@ -237,11 +241,9 @@ def demo_full_pipeline():
     print("  5.  Generated performance metrics and trade history")
 
     print(f"\nFinal portfolio value: ${final_value:,.2f}")
-    print(f"Total return: {total_return:.2f}%")
+    print(f"Total return: {total_ret * 100:.2f}%")
 
-    print("\n" + "="*60)
-    print("  Next steps: Implement dynamic strategies based on factors!")
-    print("="*60 + "\n")
+
 
     return result
 
